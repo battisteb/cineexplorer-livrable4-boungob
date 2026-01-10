@@ -1,0 +1,166 @@
+{% extends 'movies/base.html' %}
+
+{% block title %}Statistiques - CineExplorer{% endblock %}
+
+{% block content %}
+<h1>Statistiques</h1>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Films par genre</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="genresChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Films par décennie</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="decadesChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Distribution des notes</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="ratingsChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Top 10 réalisateurs</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="actorsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// films par genre (bar chart)
+new Chart(document.getElementById('genresChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ genres|safe }}.map(d => d.label),
+        datasets: [{
+            label: 'Nombre de films',
+            data: {{ genres|safe }}.map(d => d.value),
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// films par decennie (line chart)
+new Chart(document.getElementById('decadesChart'), {
+    type: 'line',
+    data: {
+        labels: {{ decades|safe }}.map(d => d.label),
+        datasets: [{
+            label: 'Nombre de films',
+            data: {{ decades|safe }}.map(d => d.value),
+            borderColor: 'rgba(75, 192, 192, 1)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            fill: true,
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// distribution notes (histogram)
+new Chart(document.getElementById('ratingsChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ ratings|safe }}.map(d => d.label),
+        datasets: [{
+            label: 'Nombre de films',
+            data: {{ ratings|safe }}.map(d => d.value),
+            backgroundColor: 'rgba(255, 206, 86, 0.6)',
+            borderColor: 'rgba(255, 206, 86, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// top acteurs (horizontal bar)
+new Chart(document.getElementById('actorsChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ actors|safe }}.map(d => d.label),
+        datasets: [{
+            label: 'Nombre de films',
+            data: {{ actors|safe }}.map(d => d.value),
+            backgroundColor: 'rgba(153, 102, 255, 0.6)',
+            borderColor: 'rgba(153, 102, 255, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            x: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,8 @@
+data/mongo/
+*.pyc
+__pycache__/
+db.sqlite3
+venv/
+.vscode/
+*.db
+.DS_Store

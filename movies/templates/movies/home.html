@@ -1,0 +1,90 @@
+{% extends 'movies/base.html' %}
+{% load movie_filters %}
+
+{% block title %}Accueil - CineExplorer{% endblock %}
+
+{% block content %}
+<h1>Bienvenue sur CineExplorer</h1>
+
+<!-- statistiques -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>Films</h5>
+                <p class="display-4">{{ stats.total_documents|default:"0" }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>Replica Set</h5>
+                <p class="h4">{% if stats.replica_status %}{{ stats.replica_status.set }}{% else %}Non configuré{% endif %}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>Collections</h5>
+                <p class="display-4">{{ stats.collections|length|default:"0" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- formulaire recherche -->
+<div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+        <form action="{% url 'movies:search' %}" method="get">
+            <div class="input-group input-group-lg">
+                <input type="text" name="q" class="form-control" placeholder="Rechercher un film, acteur, realisateur...">
+                <button class="btn btn-primary" type="submit">Rechercher</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- top 10 -->
+<h2 class="mt-5 mb-3">Top 10 des films</h2>
+<div class="row">
+    {% for movie in top_movies %}
+    <div class="col-md-2 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <a href="{% url 'movies:movie_detail' movie|get_id %}" class="text-decoration-none">{{ movie.title|truncatechars:30 }}</a>
+                </h6>
+                <p class="text-muted mb-0">{{ movie.rating|default:"N/A" }}/10</p>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <p class="text-muted">Aucun film disponible</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- films aleatoires -->
+<h2 class="mt-5 mb-3">Films à découvrir</h2>
+<div class="row">
+    {% for movie in random_movies %}
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <a href="{% url 'movies:movie_detail' movie|get_id %}" class="text-decoration-none">{{ movie.title }}</a>
+                </h5>
+                <p class="text-muted">{{ movie.year|default:"Année inconnue" }}</p>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <p class="text-muted">Aucun film disponible</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

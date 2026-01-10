@@ -1,0 +1,54 @@
+{% extends 'movies/base.html' %}
+
+{% block title %}Recherche - CineExplorer{% endblock %}
+
+{% block content %}
+<h1>Recherche</h1>
+
+<form method="get" class="mb-4">
+    <div class="input-group input-group-lg">
+        <input type="text" name="q" class="form-control" value="{{ query }}" placeholder="Rechercher un film, acteur, realisateur...">
+        <button class="btn btn-primary" type="submit">Rechercher</button>
+    </div>
+</form>
+
+{% if query %}
+    <!-- films -->
+    <h3 class="mt-4">Films ({{ movies|length }})</h3>
+    {% if movies %}
+    <div class="list-group mb-4">
+        {% for movie in movies %}
+        {% if movie.mid %}
+        <a href="{% url 'movies:movie_detail' movie.mid %}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">{{ movie.title }}</h6>
+                <small>{{ movie.year|default:"N/A" }}</small>
+            </div>
+        </a>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">Aucun film trouvé</p>
+    {% endif %}
+
+    <!-- personnes -->
+    <h3 class="mt-4">Personnes ({{ persons|length }})</h3>
+    {% if persons %}
+    <div class="list-group">
+        {% for person in persons %}
+        <div class="list-group-item">
+            <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">{{ person.name }}</h6>
+                <span class="badge bg-secondary">{{ person.movie_count }} film{{ person.movie_count|pluralize }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">Aucune personne trouvée</p>
+    {% endif %}
+{% else %}
+    <p class="text-muted">Entrez un terme de recherche pour commencer</p>
+{% endif %}
+{% endblock %}

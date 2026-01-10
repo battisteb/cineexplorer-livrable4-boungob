@@ -1,0 +1,71 @@
+{% extends 'movies/base.html' %}
+{% load movie_filters %}
+
+{% block title %}{{ movie.title|default:"Film" }} - CineExplorer{% endblock %}
+
+{% block content %}
+<!-- breadcrumb -->
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'movies:home' %}">Accueil</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'movies:movies_list' %}">Films</a></li>
+        <li class="breadcrumb-item active">{{ movie.title|default:"Film" }}</li>
+    </ol>
+</nav>
+
+{% if movie %}
+<h1>{{ movie.title }}</h1>
+<p class="lead">{{ movie.year|default:"Année inconnue" }} - {{ movie.rating|default:"N/A" }}/10</p>
+
+<!-- genres -->
+{% if movie.genres %}
+<div class="mb-3">
+    {% for genre in movie.genres %}
+    <span class="badge bg-primary">{{ genre }}</span>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- casting -->
+{% if movie.actors %}
+<h3 class="mt-4">Casting</h3>
+<ul class="list-unstyled">
+    {% for actor in movie.actors|slice:":10" %}
+    <li>{{ actor.name }}{% if actor.character %} - {{ actor.character }}{% endif %}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<!-- realisateurs -->
+{% if movie.directors %}
+<h3 class="mt-4">Réalisation</h3>
+<ul class="list-unstyled">
+    {% for director in movie.directors %}
+    <li>{{ director.name }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<!-- films similaires -->
+{% if similar_movies %}
+<h3 class="mt-5">Films similaires</h3>
+<div class="row">
+    {% for similar in similar_movies %}
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <a href="{% url 'movies:movie_detail' similar|get_id %}" class="text-decoration-none">{{ similar.title }}</a>
+                </h6>
+                <p class="text-muted mb-0">{{ similar.year|default:"N/A" }}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="alert alert-warning">Film introuvable</div>
+{% endif %}
+{% endblock %}
