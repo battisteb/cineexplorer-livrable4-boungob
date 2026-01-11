@@ -312,6 +312,105 @@ cineexplorer/
 └── .gitignore
 ```
 
+## Test depuis Git Clone (nouveau PC)
+
+Ce guide permet de tester l'installation complete depuis zero.
+
+### Etape 1: Cloner le projet
+
+```bash
+git clone https://github.com/battisteb/cineexplorer-livrable4-boungob.git
+cd cineexplorer-livrable4-boungob
+```
+
+### Etape 2: Verifier les prerequis
+
+```bash
+# Verifier Python
+python --version  # Doit afficher Python 3.8+
+
+# Verifier MongoDB
+mongod --version  # Doit afficher MongoDB 4.4+
+```
+
+### Etape 3: Creer l'environnement virtuel
+
+```bash
+python -m venv venv
+venv\Scripts\activate  # Windows
+```
+
+### Etape 4: Installer les dependances
+
+```bash
+pip install -r requirements.txt
+```
+
+### Etape 5: Verifier la base SQLite
+
+```bash
+# Verifier que data/imdb.db existe (302 MB)
+ls -lh data/imdb.db
+```
+
+**Si le fichier est manquant:**
+La base SQLite n'est PAS incluse dans le repo Git (.gitignore). Vous devez la recuperer separement ou la reconstruire depuis les fichiers CSV IMDB.
+
+### Etape 6: Creer les repertoires MongoDB
+
+```bash
+mkdir -p data/mongo/db-1 data/mongo/db-2 data/mongo/db-3
+```
+
+### Etape 7: Demarrer le Replica Set (3 terminaux)
+
+**Terminal 1:**
+```bash
+mongod --replSet rs0 --port 27017 --dbpath ./data/mongo/db-1 --bind_ip localhost
+```
+
+**Terminal 2:**
+```bash
+mongod --replSet rs0 --port 27018 --dbpath ./data/mongo/db-2 --bind_ip localhost
+```
+
+**Terminal 3:**
+```bash
+mongod --replSet rs0 --port 27019 --dbpath ./data/mongo/db-3 --bind_ip localhost
+```
+
+### Etape 8: Initialiser le Replica Set
+
+```bash
+python scripts/init_replica_set.py
+```
+
+Sortie attendue:
+```
+statut du replica set:
+  - localhost:27017: PRIMARY (ok)
+  - localhost:27018: SECONDARY (ok)
+  - localhost:27019: SECONDARY (ok)
+```
+
+### Etape 9: Importer les donnees dans MongoDB
+
+```bash
+python scripts/import_from_sqlite.py
+```
+
+**Duree:** 3-5 minutes. Doit importer 3,184,507 documents.
+
+### Etape 10: Lancer Django
+
+```bash
+python manage.py runserver
+```
+
+Ouvrir http://localhost:8000 et tester les 5 pages.
+
+---
+
 ## Tests
 
 ### Verifier le Replica Set
@@ -346,6 +445,149 @@ Sortie attendue: `Films: 291238`
 
 ## Troubleshooting
 
+### Problemes Windows specifiques
+
+#### Erreur: "Address already in use" (port 27017, 27018 ou 27019)
+
+**Cause:** MongoDB deja en cours d'execution sur le port.
+
+**Solution:**
+```bash
+# Option 1: Arreter MongoDB via les services Windows
+net stop MongoDB
+
+# Option 2: Tuer les processus MongoDB
+taskkill /F /IM mongod.exe
+
+# Verifier qu'aucun processus ne tourne
+tasklist | findstr mongod
+```
+
+#### Erreur: "Access is denied" lors du demarrage de mongod
+
+**Cause:** Permissions insuffisantes sur les repertoires data/mongo.
+
+**Solution:**
+```bash
+# Supprimer les repertoires et les recreer
+rmdir /s /q data\mongo
+mkdir data\mongo\db-1 data\mongo\db-2 data\mongo\db-3
+
+# Relancer mongod avec droits admin (PowerShell)
+```
+
+#### Erreur: "Failed to unlink socket file" (MongoDB)
+
+**Cause:** Fichier de verrou non supprime apres un arret force.
+
+**Solution:**
+```bash
+# Supprimer les fichiers mongod.lock
+del data\mongo\db-1\mongod.lock
+del data\mongo\db-2\mongod.lock
+del data\mongo\db-3\mongod.lock
+
+# Relancer les noeuds
+```
+
+#### Erreur: "ModuleNotFoundError: No module named 'pymongo'"
+
+**Cause:** Environnement virtuel non active ou dependances non installees.
+
+**Solution:**
+```bash
+# Activer l'environnement virtuel
+venv\Scripts\activate
+
+# Reinstaller les dependances
+pip install -r requirements.txt
+
+# Verifier l'installation
+pip list | findstr pymongo
+```
+
+#### Erreur: "sqlite3.OperationalError: unable to open database file"
+
+**Cause:** Fichier data/imdb.db manquant ou chemin incorrect.
+
+**Solution:**
+```bash
+# Verifier que le fichier existe
+dir data\imdb.db
+
+# Si absent, recuperer le fichier (302 MB) depuis une source externe
+# Le fichier n'est PAS dans le repo Git (.gitignore)
+```
+
+#### Erreur: Django "CSRF verification failed"
+
+**Cause:** Cookies bloques ou probleme de configuration.
+
+**Solution:**
+```bash
+# Vider le cache du navigateur (Ctrl+Shift+Del)
+# Ou tester en navigation privee
+
+# Verifier config/settings.py contient:
+# CSRF_TRUSTED_ORIGINS = ['http://localhost:8000']
+```
+
+#### Erreur: "ConnectionRefusedError: [Errno 111] Connection refused" (MongoDB)
+
+**Cause:** Les noeuds MongoDB ne sont pas demarres.
+
+**Solution:**
+```bash
+# Verifier les processus MongoDB
+tasklist | findstr mongod
+
+# Si aucun resultat, redemarrer les 3 noeuds (voir Demarrage)
+# Attendre 10-15 secondes que les noeuds soient prets
+# Puis initialiser: python scripts/init_replica_set.py
+```
+
+#### Erreur: "WriteConcernError: operation was interrupted" (lors de l'import)
+
+**Cause:** Changement d'etat du Replica Set pendant l'agregation.
+
+**Solution:**
+```bash
+# Attendre que le Replica Set soit stable (PRIMARY elu)
+python scripts/init_replica_set.py
+
+# Verifier le statut (doit afficher PRIMARY + 2 SECONDARY)
+# Si instable, redemarrer les 3 noeuds et reinitialiser
+
+# Relancer l'import
+python scripts/import_from_sqlite.py
+```
+
+#### Barre de progression qui s'empile (import_from_sqlite.py)
+
+**Cause:** Terminal VS Code Python qui ne gere pas correctement les caracteres de retour chariot (\r).
+
+**Solution:**
+```bash
+# Utiliser PowerShell ou CMD standard au lieu du terminal Python de VS Code
+# Ou desactiver la barre de progression dans le script (remplacer end='\r' par end='\n')
+```
+
+#### Erreur: "django.db.utils.OperationalError: no such table: movies"
+
+**Cause:** Tentative d'utiliser l'ORM Django alors que le projet n'utilise pas de modeles ORM.
+
+**Solution:**
+```bash
+# Le projet utilise SQLite et MongoDB directement (pas d'ORM)
+# Verifier que vous utilisez les services:
+# - SQLiteService pour SQLite
+# - MongoService pour MongoDB
+```
+
+---
+
+### Problemes generaux
+
 ### Erreur: "connexion au replica set impossible"
 
 **Solution:**
@@ -364,6 +606,14 @@ python scripts/import_from_sqlite.py
 
 **Solution:**
 Verifier que les donnees existent dans MongoDB et SQLite.
+
+### Logs MongoDB pour debugging
+
+**Afficher les logs:**
+```bash
+# Windows: Les logs sont affiches directement dans les terminaux mongod
+# Consulter la sortie des 3 terminaux ou mongod est lance
+```
 
 ## Auteurs
 
